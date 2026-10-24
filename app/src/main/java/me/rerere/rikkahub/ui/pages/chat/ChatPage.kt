@@ -4,9 +4,9 @@
  * 本项目基于 GNU AGPL v3 开源，详见根目录 LICENSE 文件
  */
 
-package me.rerere.rikkahub.ui.pages.chat
-
 @file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+
+package me.rerere.rikkahub.ui.pages.chat
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
