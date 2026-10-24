@@ -1,4 +1,4 @@
-﻿/*
+/*
  * 橘瓣 OrangeChat
  * 衍生自 RikkaHub (https://github.com/rikkahub/rikkahub)，原作者 RE
  * 本项目基于 GNU AGPL v3 开源，详见根目录 LICENSE 文件
@@ -59,6 +59,7 @@ import me.rerere.tts.provider.TTSProviderSetting
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import kotlin.uuid.Uuid
+import me.rerere.orangechat.data.LockChatSetting
 
 private const val TAG = "PreferencesStore"
 
@@ -163,6 +164,9 @@ class SettingsStore(
         // 系统工具设置
         val SYSTEM_TOOLS_SETTING = stringPreferencesKey("system_tools_setting")
 
+        // 锁对话设置
+        val LOCK_CHAT_SETTING = stringPreferencesKey("lock_chat_setting")
+
         // 主动消息设置
         val PROACTIVE_MESSAGE_SETTING = stringPreferencesKey("proactive_message_setting")
 
@@ -193,7 +197,6 @@ class SettingsStore(
 
     private val dataStore = context.settingsStore
 
-    // 用于检测 assistants 列表是否真正变化，避免无关设置写入触发 Pebble 模板缓存清空
     @Volatile
     private var lastAssistantsForCacheInvalidation: List<Assistant>? = null
 
@@ -212,14 +215,10 @@ class SettingsStore(
                 favoriteModels = preferences[FAVORITE_MODELS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
-                chatModelId = preferences[SELECT_MODEL]?.let { Uuid.parse(it) }
-                    ?: DEFAULT_AUTO_MODEL_ID,
-                titleModelId = preferences[TITLE_MODEL]?.let { Uuid.parse(it) }
-                    ?: DEFAULT_AUTO_MODEL_ID,
-                translateModeId = preferences[TRANSLATE_MODEL]?.let { Uuid.parse(it) }
-                    ?: DEFAULT_AUTO_MODEL_ID,
-                suggestionModelId = preferences[SUGGESTION_MODEL]?.let { Uuid.parse(it) }
-                    ?: DEFAULT_AUTO_MODEL_ID,
+                chatModelId = preferences[SELECT_MODEL]?.let { Uuid.parse(it) } ?: DEFAULT_AUTO_MODEL_ID,
+                titleModelId = preferences[TITLE_MODEL]?.let { Uuid.parse(it) } ?: DEFAULT_AUTO_MODEL_ID,
+                translateModeId = preferences[TRANSLATE_MODEL]?.let { Uuid.parse(it) } ?: DEFAULT_AUTO_MODEL_ID,
+                suggestionModelId = preferences[SUGGESTION_MODEL]?.let { Uuid.parse(it) } ?: DEFAULT_AUTO_MODEL_ID,
                 imageGenerationModelId = preferences[IMAGE_GENERATION_MODEL]?.let { Uuid.parse(it) } ?: Uuid.random(),
                 titlePrompt = preferences[TITLE_PROMPT] ?: DEFAULT_TITLE_PROMPT,
                 translatePrompt = preferences[TRANSLATION_PROMPT] ?: DEFAULT_TRANSLATION_PROMPT,
@@ -229,8 +228,7 @@ class SettingsStore(
                 ocrPrompt = preferences[OCR_PROMPT] ?: DEFAULT_OCR_PROMPT,
                 compressModelId = preferences[COMPRESS_MODEL]?.let { Uuid.parse(it) } ?: DEFAULT_AUTO_MODEL_ID,
                 compressPrompt = preferences[COMPRESS_PROMPT] ?: DEFAULT_COMPRESS_PROMPT,
-                assistantId = preferences[SELECT_ASSISTANT]?.let { Uuid.parse(it) }
-                    ?: DEFAULT_ASSISTANT_ID,
+                assistantId = preferences[SELECT_ASSISTANT]?.let { Uuid.parse(it) } ?: DEFAULT_ASSISTANT_ID,
                 assistantTags = preferences[ASSISTANT_TAGS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
@@ -290,6 +288,11 @@ class SettingsStore(
                 systemToolsSetting = preferences[SYSTEM_TOOLS_SETTING]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: SystemToolsSetting(),
+                
+                lockChatSetting = preferences[LOCK_CHAT_SETTING]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: LockChatSetting(),
+                
                 proactiveMessageSetting = preferences[PROACTIVE_MESSAGE_SETTING]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: ProactiveMessageSetting(),
@@ -311,7 +314,7 @@ class SettingsStore(
                 autoApproveAllTools = preferences[AUTO_APPROVE_ALL_TOOLS] == true,
             )
         }
-        .map {
+                .map {
             var providers = it.providers.ifEmpty { DEFAULT_PROVIDERS }.toMutableList()
             DEFAULT_PROVIDERS.forEach { defaultProvider ->
                 if (providers.none { it.id == defaultProvider.id }) {
@@ -347,7 +350,6 @@ class SettingsStore(
             )
         }
         .map { settings ->
-            // 去重并清理无效引用
             val validMcpServerIds = settings.mcpServers.map { it.id }.toSet()
             val validModeInjectionIds = settings.modeInjections.map { it.id }.toSet()
             val validLorebookIds = settings.lorebooks.map { it.id }.toSet()
@@ -359,11 +361,9 @@ class SettingsStore(
                         is ProviderSetting.OpenAI -> provider.copy(
                             models = provider.models.distinctBy { model -> model.id }
                         )
-
                         is ProviderSetting.Google -> provider.copy(
                             models = provider.models.distinctBy { model -> model.id }
                         )
-
                         is ProviderSetting.Claude -> provider.copy(
                             models = provider.models.distinctBy { model -> model.id }
                         )
@@ -371,19 +371,15 @@ class SettingsStore(
                 },
                 assistants = settings.assistants.distinctBy { it.id }.map { assistant ->
                     assistant.copy(
-                        // 过滤掉不存在的 MCP 服务器 ID
                         mcpServers = assistant.mcpServers.filter { serverId ->
                             serverId in validMcpServerIds
                         }.toSet(),
-                        // 过滤掉不存在的模式注入 ID
                         modeInjectionIds = assistant.modeInjectionIds.filter { id ->
                             id in validModeInjectionIds
                         }.toSet(),
-                        // 过滤掉不存在的 Lorebook ID
                         lorebookIds = assistant.lorebookIds.filter { id ->
                             id in validLorebookIds
                         }.toSet(),
-                        // 过滤掉不存在的快捷消息 ID
                         quickMessageIds = assistant.quickMessageIds.filter { id ->
                             id in validQuickMessageIds
                         }.toSet()
@@ -404,8 +400,6 @@ class SettingsStore(
             )
         }
         .onEach { settings ->
-            // 只在助手列表变化时才清空 Pebble 模板缓存（assistant 的 messageTemplate 字段决定模板内容）
-            // 避免无关设置变化（如显示设置、provider 设置等）触发不必要的模板重新编译
             if (settings.assistants != lastAssistantsForCacheInvalidation) {
                 lastAssistantsForCacheInvalidation = settings.assistants
                 get<PebbleEngine>().templateCache.invalidateAll()
@@ -481,6 +475,9 @@ class SettingsStore(
             preferences[LAUNCH_COUNT] = settings.launchCount
             preferences[SPONSOR_ALERT_DISMISSED_AT] = settings.sponsorAlertDismissedAt
             preferences[SYSTEM_TOOLS_SETTING] = JsonInstant.encodeToString(settings.systemToolsSetting)
+            
+            preferences[LOCK_CHAT_SETTING] = JsonInstant.encodeToString(settings.lockChatSetting)
+            
             preferences[PROACTIVE_MESSAGE_SETTING] = JsonInstant.encodeToString(settings.proactiveMessageSetting)
             preferences[WECHAT_BOT_SETTING] = JsonInstant.encodeToString(settings.wechatBotSetting)
             preferences[QQ_BOT_SETTING] = JsonInstant.encodeToString(settings.qqBotSetting)
@@ -621,6 +618,9 @@ data class Settings(
     val launchCount: Int = 0,
     val sponsorAlertDismissedAt: Int = 0,
     val systemToolsSetting: SystemToolsSetting = SystemToolsSetting(),
+    
+    val lockChatSetting: LockChatSetting = LockChatSetting(),
+    
     val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(),
     val wechatBotSetting: WechatBotSetting = WechatBotSetting(),
     val qqBotSetting: QqBotSetting = QqBotSetting(),
@@ -686,11 +686,8 @@ data class DisplaySetting(
     val volumeKeyScrollRatio: Float = 1.0f,
     val chatBubbleTransparency: Float = 0f,
     val thinkingChainTransparency: Float = 0f,
-    // 自定义字体
     val customFontPath: String = "",
-    // 输入框自定义背景
     val inputBackgroundPath: String = "",
-    // 头像框（QQ挂件风格）
     val userAvatarFramePath: String = "",
     val aiAvatarFramePath: String = "",
     val userAvatarFrameOffsetX: Float = 0f,
@@ -699,11 +696,8 @@ data class DisplaySetting(
     val aiAvatarFrameOffsetX: Float = 0f,
     val aiAvatarFrameOffsetY: Float = 0f,
     val aiAvatarFrameScale: Float = 1f,
-    // 侧边栏背景
     val drawerBackgroundPath: String = "",
-    // 侧边栏元素透明度
     val drawerItemAlpha: Float = 1f,
-    // 颜色自定义
     val chatTextColor: Long? = null,
     val globalTextColor: Long? = null,
     val userBubbleColor: Long? = null,
@@ -713,11 +707,10 @@ data class DisplaySetting(
     val chatBackgroundColor: Long? = null,
     val primaryColor: Long? = null,
     val inputFieldColor: Long? = null,
-    // 气泡背景图 & 圆角
     val userBubbleImagePath: String = "",
     val assistantBubbleImagePath: String = "",
     val bubbleCornerRadius: Float = 16f,
-    val bubbleImageOverlayEnabled: Boolean = false, // 关=纯图片, 开=图片+主题色遮罩
+    val bubbleImageOverlayEnabled: Boolean = false,
 )
 
 @Serializable
