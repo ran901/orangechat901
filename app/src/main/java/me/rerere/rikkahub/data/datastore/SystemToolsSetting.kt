@@ -89,3 +89,4 @@ data class SystemToolsSetting(
         if (postNotificationEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.PostNotification)
         if (storageInfoEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.StorageInfo)
         if (appSwitchEnabled) options.add(me.rerere.rikkahub.data.ai
+        if (lockChatEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.LockChat)                                  
