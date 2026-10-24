@@ -3,7 +3,7 @@ package me.rerere.rikkahub.data.ai.tools
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.LockChatSetting // ✅ 修正包名路径
+import me.rerere.rikkahub.data.datastore.LockChatSetting// ✅ 修正包名路径
 import kotlinx.serialization.json.*
 import org.koin.core.component.KoinPlatform // ✅ 修正 Koin 获取方式
 
