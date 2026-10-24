@@ -443,7 +443,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         if (SystemToolOption.Fingerprint in enabledTools) tools.add(fingerprintTool)
         
         // 👇 唯一新加的：把工具塞进列表
-        if (SystemToolOption.LockChat in enabledTools) tools.add(createLockChatTool())
+if (SystemToolOption.LockChat in enabledTools) tools.add(createLockChatTool(settings))
         
         return tools
     }
