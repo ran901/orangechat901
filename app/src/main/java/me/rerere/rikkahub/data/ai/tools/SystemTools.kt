@@ -1,4 +1,4 @@
-﻿/*
+/*
  * 橘瓣 OrangeChat
  * 衍生自 RikkaHub (https://github.com/rikkahub/rikkahub)，原作者 RE
  * 本项目基于 GNU AGPL v3 开源，详见根目录 LICENSE 文件
@@ -58,6 +58,9 @@ sealed class SystemToolOption {
     @Serializable @SerialName("app_switch") data object AppSwitch : SystemToolOption()
     @Serializable @SerialName("app_lock") data object AppLock : SystemToolOption()
     @Serializable @SerialName("fingerprint") data object Fingerprint : SystemToolOption()
+    
+    // 👇 新加的锁对话选项
+    @Serializable @SerialName("lock_chat") data object LockChat : SystemToolOption()
 }
 
 class SystemTools(private val context: Context, private val settings: Settings) {
@@ -120,7 +123,6 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                         put("accuracy", loc.accuracy.toDouble())
                         put("timestamp", loc.time)
                         put("time", dateFormat.format(Date(loc.time)))
-                        // 明确告知 AI 这份数据是不是刚定位到的，避免 AI 把过期缓存当实时位置
                         put("is_fresh", fetched.isFresh)
 
                         val apiKey = settings.systemToolsSetting.amapApiKey
@@ -171,7 +173,6 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             }
         )
     }
-
     // ==================== 通知工具 ====================
 
     val notificationsTool: Tool by lazy {
@@ -317,7 +318,6 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                                     put("error", "Missing required parameter 'keyword' for search_messages")
                                 }.toString()))
                             val limit = (params["limit"]?.jsonPrimitive?.intOrNull ?: 10).coerceIn(1, 50)
-                            // Use ilike for case-insensitive search on content column
                             val encodedKeyword = java.net.URLEncoder.encode("%$keyword%", "UTF-8")
                             val url = java.net.URL("$baseUrl/rest/v1/$table?select=*&content=ilike.$encodedKeyword&limit=$limit")
                             val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
@@ -388,7 +388,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
     private val storageInfoTool by lazy { createStorageInfoTool(context) }
     private val appSwitchTool by lazy { createAppSwitchTool(context) }
     private val appLockTool by lazy { createAppLockTool(context) }
-    // 指纹验证: 共用 BiometricPromptActivity.buffer 单例, 保证工具与弹窗 Activity 同一个 buffer
+    
     private val fingerprintTool by lazy {
         me.rerere.rikkahub.data.ai.tools.local.fingerprintTool(
             context,
@@ -438,6 +438,10 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         if (SystemToolOption.AppSwitch in enabledTools) tools.add(appSwitchTool)
         if (SystemToolOption.AppLock in enabledTools) tools.add(appLockTool)
         if (SystemToolOption.Fingerprint in enabledTools) tools.add(fingerprintTool)
+        
+        // 👇 新加的工具注册
+        if (SystemToolOption.LockChat in enabledTools) tools.add(createLockChatTool())
+        
         return tools
     }
 }
