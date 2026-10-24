@@ -59,7 +59,6 @@ import me.rerere.tts.provider.TTSProviderSetting
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.data.LockChatSetting
 
 private const val TAG = "PreferencesStore"
 
