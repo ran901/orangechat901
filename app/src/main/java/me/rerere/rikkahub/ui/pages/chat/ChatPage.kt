@@ -616,32 +616,33 @@ private fun TopBar(
 }
 
 // ============ 新加的锁定条 UI ============
-@Composable
-fun LockChatBar(lock: LockChatSetting) {
-    var remaining by remember(lock.lockedUntilMillis) {
-        mutableStateOf(lock.lockedUntilMillis - System.currentTimeMillis())
+@androidx.compose.runtime.Composable
+fun LockChatBar(lock: me.rerere.rikkahub.data.datastore.LockChatSetting) {
+    var remaining by androidx.compose.runtime.remember(lock.lockedUntilMillis) {
+        androidx.compose.runtime.mutableStateOf(lock.lockedUntilMillis - System.currentTimeMillis())
     }
-    
-    LaunchedEffect(lock.lockedUntilMillis) {
+    androidx.compose.runtime.LaunchedEffect(lock.lockedUntilMillis) {
         while (remaining > 0) {
-            delay(1000)
+            kotlinx.coroutines.delay(1000)
             remaining = lock.lockedUntilMillis - System.currentTimeMillis()
         }
     }
-    
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.fillMaxWidth()
+    androidx.compose.material3.Surface(
+        color = lock.lockBackgroundColor?.let { androidx.compose.ui.graphics.Color(it) } ?: androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+        modifier = androidx.compose.ui.Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        androidx.compose.foundation.layout.Column(
+            modifier = androidx.compose.ui.Modifier.padding(16.dp),
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
         ) {
-            Text(text = lock.lockMessage, style = MaterialTheme.typography.bodyLarge)
-            Text(
+            androidx.compose.material3.Text(
+                text = lock.lockMessage, 
+                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
+            )
+            androidx.compose.material3.Text(
                 text = "距离解锁还有 ${(remaining / 60000) + 1} 分 ${(remaining / 1000) % 60} 秒",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
