@@ -110,19 +110,23 @@ android {
             buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
             buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
         }
-        create("baseline") {
-            initWith(getByName("release"))
-            matchingFallbacks.add("release")
-            signingConfig = signingConfigs.getByName("debug")
-            applicationIdSuffix = ".debug"
-            isDebuggable = false
-            isMinifyEnabled = false
-            isShrinkResources = false
-            isProfileable = true
-            buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
-            buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
-        }
+            create("baseline") {
+        initWith(getByName("release"))
+        matchingFallbacks.add("release")
+        signingConfig = signingConfigs.getByName("debug")
+        applicationIdSuffix = ".debug"
+        isDebuggable = false
+        isMinifyEnabled = false
+        isShrinkResources = false
+        isProfileable = true
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
+        buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
     }
+    create("lock") {
+        initWith(getByName("debug"))
+        applicationIdSuffix = ".lock"
+    }
+}
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
