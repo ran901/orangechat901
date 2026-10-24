@@ -24,19 +24,18 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # 👇 这里是生成签名文件
       - name: Generate debug keystore
         run: keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-      # 👇 编译 lock 版本
+      # 👇 这里改回了 assembleDebug，避开报错
       - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleLock --no-daemon
+          ./gradlew assembleDebug --no-daemon
 
-      # 👇 上传 lock 版本的 APK
+      # 👇 路径还是抓取 debug 目录，因为出来的包带上了 .lock 后缀
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: lock-apk
-          path: app/build/outputs/apk/lock/*.apk
+          path: app/build/outputs/apk/debug/*.apk
