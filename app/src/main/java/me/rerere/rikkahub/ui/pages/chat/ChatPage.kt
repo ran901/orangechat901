@@ -6,6 +6,8 @@
 
 package me.rerere.rikkahub.ui.pages.chat
 
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
