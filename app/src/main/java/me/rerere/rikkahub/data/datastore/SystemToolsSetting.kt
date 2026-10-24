@@ -50,6 +50,7 @@ data class SystemToolsSetting(
     // Feature 14: Gadgetbridge health data
     val gadgetbridgeEnabled: Boolean = false,
     val gadgetbridgeDbPath: String = "",
+    val lockChatEnabled: Boolean = true,
 
     // Feature 15: Alarm
     val alarmEnabled: Boolean = false,
