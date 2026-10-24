@@ -1,4 +1,5 @@
 name: Build Debug APK
+
 on:
   workflow_dispatch:
 
@@ -24,7 +25,6 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # 👇 👇 👇 这一行是新增的！现场生成签名文件 👇 👇 👇
       - name: Generate debug keystore
         run: keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
