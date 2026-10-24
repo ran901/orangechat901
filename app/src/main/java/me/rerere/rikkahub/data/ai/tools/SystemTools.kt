@@ -59,7 +59,7 @@ sealed class SystemToolOption {
     @Serializable @SerialName("app_lock") data object AppLock : SystemToolOption()
     @Serializable @SerialName("fingerprint") data object Fingerprint : SystemToolOption()
     
-    // 👇 新加的锁对话选项
+    // 👇 唯一新加的：锁对话枚举
     @Serializable @SerialName("lock_chat") data object LockChat : SystemToolOption()
 }
 
@@ -87,7 +87,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
     val locationTool: Tool by lazy {
         Tool(
             name = "get_location",
-            description = "Get the current device location with coordinates and address. Uses Amap API for reverse geocoding if API key is configured.",
+            description = "Get the current device location with coordinates and address. Uses Amap API forreverse geocoding if API key is configured.",
             needsApproval = true,
             parameters = {
                 InputSchema.Obj(
@@ -123,6 +123,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                         put("accuracy", loc.accuracy.toDouble())
                         put("timestamp", loc.time)
                         put("time", dateFormat.format(Date(loc.time)))
+                        // 明确告知 AI 这份数据是不是刚定位到的，避免 AI 把过期缓存当实时位置
                         put("is_fresh", fetched.isFresh)
 
                         val apiKey = settings.systemToolsSetting.amapApiKey
@@ -173,6 +174,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             }
         )
     }
+
     // ==================== 通知工具 ====================
 
     val notificationsTool: Tool by lazy {
@@ -180,7 +182,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
             name = "get_notifications",
             description = "Get today's notifications from the device. Returns notification titles, content, app names, and timestamps.",
             needsApproval = true,
-            parameters = {
+  parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
                         putJsonObject("limit") {
@@ -318,6 +320,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                                     put("error", "Missing required parameter 'keyword' for search_messages")
                                 }.toString()))
                             val limit = (params["limit"]?.jsonPrimitive?.intOrNull ?: 10).coerceIn(1, 50)
+                            // Use ilike for case-insensitive search on content column
                             val encodedKeyword = java.net.URLEncoder.encode("%$keyword%", "UTF-8")
                             val url = java.net.URL("$baseUrl/rest/v1/$table?select=*&content=ilike.$encodedKeyword&limit=$limit")
                             val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
@@ -334,7 +337,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
                             } else {
                                 connection.errorStream?.bufferedReader()?.readText() ?: "Unknown error"
                             }
-                            listOf(UIMessagePart.Text(buildJsonObject {
+                           listOf(UIMessagePart.Text(buildJsonObject {
                                 put("success", responseCode in 200..299)
                                 put("operation", "search_messages")
                                 put("table", table)
@@ -388,7 +391,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
     private val storageInfoTool by lazy { createStorageInfoTool(context) }
     private val appSwitchTool by lazy { createAppSwitchTool(context) }
     private val appLockTool by lazy { createAppLockTool(context) }
-    
+    // 指纹验证: 共用 BiometricPromptActivity.buffer 单例, 保证工具与弹窗 Activity 同一个 buffer
     private val fingerprintTool by lazy {
         me.rerere.rikkahub.data.ai.tools.local.fingerprintTool(
             context,
@@ -439,7 +442,7 @@ class SystemTools(private val context: Context, private val settings: Settings) 
         if (SystemToolOption.AppLock in enabledTools) tools.add(appLockTool)
         if (SystemToolOption.Fingerprint in enabledTools) tools.add(fingerprintTool)
         
-        // 👇 新加的工具注册
+        // 👇 唯一新加的：把工具塞进列表
         if (SystemToolOption.LockChat in enabledTools) tools.add(createLockChatTool())
         
         return tools
