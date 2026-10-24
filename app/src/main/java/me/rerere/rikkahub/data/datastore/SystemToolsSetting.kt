@@ -88,5 +88,9 @@ data class SystemToolsSetting(
         if (scanMediaEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.ScanMedia)
         if (postNotificationEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.PostNotification)
         if (storageInfoEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.StorageInfo)
-        if (appSwitchEnabled) options.add(me.rerere.rikkahub.data.ai
-        if (lockChatEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.LockChat)                                  
+                if (appSwitchEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.AppSwitch)
+        if (lockChatEnabled) options.add(me.rerere.rikkahub.data.ai.tools.SystemToolOption.LockChat)
+        
+        return options
+    }
+}
